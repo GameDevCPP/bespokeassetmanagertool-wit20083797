@@ -52,6 +52,7 @@ public:
 	}
 
 	void draw(sf::RenderWindow& window) {
+		UpdateDisplayText();
 		window.draw(background);
 		window.draw(backgroundText);
 		window.draw(text);
@@ -537,7 +538,7 @@ int main()
 				}
 				textboxes[selectedTextBox].UpdateDisplayText();
 
-				std::cout << textboxes[selectedTextBox].displayText << std::endl;
+				//std::cout << textboxes[selectedTextBox].displayText << std::endl;
 			}
 
 
@@ -564,7 +565,7 @@ int main()
 		sf::RectangleShape saveToJsonButton;
 		saveToJsonButton.setSize(sf::Vector2f(55, 25));
 		saveToJsonButton.setOutlineColor(sf::Color::White);
-		saveToJsonButton.setOutlineThickness(5);
+		saveToJsonButton.setOutlineThickness(2);
 		saveToJsonButton.setPosition(840, 650);
 		saveToJsonButton.setFillColor(sf::Color(0, 175, 0));
 
@@ -578,7 +579,7 @@ int main()
 		sf::RectangleShape loadFromJsonButton;
 		loadFromJsonButton.setSize(sf::Vector2f(55, 25));
 		loadFromJsonButton.setOutlineColor(sf::Color::White);
-		loadFromJsonButton.setOutlineThickness(5);
+		loadFromJsonButton.setOutlineThickness(2);
 		loadFromJsonButton.setPosition(915, 650);
 		loadFromJsonButton.setFillColor(sf::Color(0, 175, 0));
 
@@ -590,9 +591,9 @@ int main()
 		loadText.setString("Load");
 
 		sf::RectangleShape createButton;
-		createButton.setSize(sf::Vector2f(55, 25));
+		createButton.setSize(sf::Vector2f(75, 25));
 		createButton.setOutlineColor(sf::Color::White);
-		createButton.setOutlineThickness(5);
+		createButton.setOutlineThickness(2);
 		createButton.setPosition(990, 650);
 		createButton.setFillColor(sf::Color(0, 175, 0));
 
@@ -614,14 +615,14 @@ int main()
 		{
 			mouseReleased - false;
 			if (localMousePosition.x < 810) {
-				std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
+				//std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
 				
 				for (int i = 0; i < mapsize * mapsize; i++) {
 					if (localMousePosition.x > tiles[i].x and
 						localMousePosition.x < tiles[i].x + tilesizeX and
 						localMousePosition.y > tiles[i].y and
 						localMousePosition.y < tiles[i].y + tilesizeY) {
-						std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
+						//std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
 						tiles[i].UpdateTexture(selectedTileType, textures);
 						level[i] = selectedTileType;
 						
@@ -636,7 +637,7 @@ int main()
 				localMousePosition.x < saveToJsonButton.getPosition().x + saveToJsonButton.getSize().x and
 				localMousePosition.y > saveToJsonButton.getPosition().y and
 				localMousePosition.y < saveToJsonButton.getPosition().y + saveToJsonButton.getSize().y) {
-				std::cout << "Saving Json" << std::endl;
+				//std::cout << "Saving Json" << std::endl;
 				SaveToJson(textboxes[0].displayText, level, tilesizeX, tilesizeY, mapsize, tileset);
 
 
@@ -648,8 +649,10 @@ int main()
 				localMousePosition.x < loadFromJsonButton.getPosition().x + loadFromJsonButton.getSize().x and
 				localMousePosition.y > loadFromJsonButton.getPosition().y and
 				localMousePosition.y < loadFromJsonButton.getPosition().y + loadFromJsonButton.getSize().y) {
-				std::cout << "Loading Json" << std::endl;
+					
+				//std::cout << "Loading Json" << std::endl;
 				LoadFromJson(textboxes[0].displayText, level, tilesizeX, tilesizeY, mapsize, tileset);
+				
 				InitializeNumOfTextures(tileset, numOfTexturesX, numOfTexturesY, numOfTextures, tilesizeX, tilesizeY);
 				textures.resize(numOfTextures);
 				CreateSpriteSheet(textures, tileset, numOfTexturesX, numOfTexturesY, tilesizeX, tilesizeY);
@@ -658,7 +661,11 @@ int main()
 				previewTiles.resize(numOfTextures);
 				createPreviewTiles(previewTiles, textures, tilesizeX, tilesizeY, numOfTextures);
 				SetTileSprites(tiles, level, mapsize, tilesizeX, tilesizeY, textures);
-
+				
+				textboxes[1].displayText = std::to_string(tilesizeX);
+				textboxes[2].displayText = std::to_string(tilesizeY);
+				textboxes[3].displayText = std::to_string(mapsize);
+				textboxes[4].displayText = tileset;
 
 			}
 			else if (localMousePosition.x > createButton.getPosition().x and
