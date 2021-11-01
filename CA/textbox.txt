@@ -1,0 +1,29 @@
+#include <TGUI/TGUI.hpp>
+class Textbox{
+public:
+	int x,y,width,height;
+	sf::RectangleShape  background;
+	sf::Text text;
+	std::string displayText;
+	
+	textbox(int inputX, int inputY, int inputWidth, int inputHeight,sf::Font &font){
+		x = inputX;
+		y = inputY;
+		width = inputWidth;
+		height = inputHeight;
+		background.setPosition(x, y);
+		background.setSize(sf::Vector2f(width,height));
+		text.setFont(font);
+		text.setCharacterSize(inputHeight);
+		text.setFillColor(sf::Color::White);
+		text.setPosition(inputX,inputY);
+		text.setString("Hello");
+	}
+	
+	void Textbox::draw(sf::RenderWindow &window){
+		window.draw(background);
+		window.draw(text);
+	}
+	
+};
+
