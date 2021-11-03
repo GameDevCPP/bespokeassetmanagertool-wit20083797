@@ -141,7 +141,7 @@ public:
 	int y = 0;
 	sf::Sprite sprite = sf::Sprite();
 
-	Tile(int tValue, int xpos, int ypos, std::vector<sf::Texture> &textures) {
+	Tile(int tValue, int xpos, int ypos, std::vector<sf::Texture>& textures) {
 		textureValue = tValue;
 		x = xpos;
 		y = ypos;
@@ -149,7 +149,7 @@ public:
 		sprite.setPosition(x, y);
 	}
 
-	void UpdateTexture(int tValue, std::vector<sf::Texture> &textures) {
+	void UpdateTexture(int tValue, std::vector<sf::Texture>& textures) {
 		textureValue = tValue;
 		sprite.setTexture(textures[tValue]);
 	}
@@ -162,7 +162,27 @@ public:
 
 };
 
+class Map {
+public:
+	std::vector<int> map;
+	std::vector<int> tileSize, mapSize; //what structure would suit these. Note SFML types wont work here.
+	std::string textureForMap;
+	const int* get_level()
+	{
+		//since vector must store data contiguously, the following works for array
+		int* a = &map[0];
+		return a;
+	}
 
+	Map() {
+		map = {};
+		tileSize = {};
+		mapSize = {};
+		textureForMap = "";
+	}
+
+
+};
 
 namespace ns {
 	struct MapForJsonStruct {
@@ -196,7 +216,7 @@ namespace ns {
 }
 
 
-void SaveToJson(std::string workingFile, std::vector<int> level, int tilesizeX, int tilesizeY, int mapsize, std::string tileset) {
+void SaveToJson(std::string workingFile, Map map) {
 
 
 	/*ns::MapForJsonStruct map;
@@ -221,30 +241,29 @@ void SaveToJson(std::string workingFile, std::vector<int> level, int tilesizeX, 
 	*/
 
 
-	std::ofstream outJson(workingFile+".json");
-	sf::Vector2u widthAndHeight(mapsize, mapsize), tileSize(tilesizeX, tilesizeY);
+	std::ofstream outJson(workingFile + ".json");
+	//sf::Vector2u widthAndHeight(mapsize, mapsize), tileSize(tilesizeX, tilesizeY);
 	nlohmann::json jsonMap = {
-		{"map",level},
-		{"tilesize",{tileSize.x,tileSize.y}},
-		{"mapsize",{widthAndHeight.x,widthAndHeight.y}},
-		{"maptexture",tileset}
+		{"map",map.map},
+		{"tilesize",map.tileSize},
+		{"mapsize",map.mapSize},
+		{"maptexture",map.textureForMap}
 	};
 	outJson << jsonMap << std::endl;
 	outJson.close();
 
 }
 
-void LoadFromJson(std::string workingFile, std::vector<int>& level, int& tilesizeX, int& tilesizeY, int& mapsize, std::string& tileset) {
+void LoadFromJson(std::string workingFile, Map &map) {
 
 	nlohmann::json j2;
-	std::ifstream inputFile(workingFile+".json");
+	std::ifstream inputFile(workingFile + ".json");
 
 	if (!inputFile.good()) {
-		level = {};
-		tileset = "";
-		mapsize = 0;
-		tilesizeX = 0;
-		tilesizeY = 0;
+		map.map = {};
+		map.textureForMap = "";
+		map.mapSize = { 0,0 };
+		map.tileSize = { 0,0 };
 		return;
 	}
 
@@ -271,25 +290,21 @@ void LoadFromJson(std::string workingFile, std::vector<int>& level, int& tilesiz
 	std::cout << "load_tileset: " << load_tileset  << " load_mapWidth: " << load_mapWidth << " load_mapHeight: " << load_mapHeight << std::endl;
 	*/
 
-	level = load_tiles;
-	tileset = load_tileset;
-	if (load_mapWidth > load_mapHeight) {
-		mapsize = load_mapWidth;
-	}
-	else {
-		mapsize = load_mapHeight;
-	}
-	tilesizeX = load_tileSize[0];
-	tilesizeY = load_tileSize[1];
+	map.map = load_tiles;
+	map.textureForMap = load_tileset;
+	map.mapSize[0] = load_mapWidth;
+	map.mapSize[1] = load_mapHeight;
+	map.tileSize = load_tileSize;
 
+	std::cout << map.textureForMap <<map.mapSize[0] << map.mapSize[1] << map.tileSize[0] << map.tileSize[1] << std::endl;
 }
 
 
+void InitializeNumOfTextures(Map map, int& numOfTexturesX, int& numOfTexturesY, int& numOfTextures) {
 
-void InitializeNumOfTextures(std::string tileset, int& numOfTexturesX, int& numOfTexturesY, int& numOfTextures, int tilesizeX, int tilesizeY) {
 	sf::Texture m_tileset;
-	if (!m_tileset.loadFromFile(tileset)) {
-		std::cout << "Failed To Load Tileset " << tileset << std::endl;
+	if (!m_tileset.loadFromFile(map.textureForMap)) {
+		std::cout << "Failed To Load Tileset " << map.textureForMap << std::endl;
 		numOfTexturesX = 0;
 		numOfTexturesY = 0;
 		numOfTextures = 0;
@@ -297,41 +312,41 @@ void InitializeNumOfTextures(std::string tileset, int& numOfTexturesX, int& numO
 	}
 
 
-	numOfTexturesX = m_tileset.getSize().x / tilesizeX;
+	numOfTexturesX = m_tileset.getSize().x / map.tileSize[0];
 
-	numOfTexturesY = m_tileset.getSize().y / tilesizeY;
+	numOfTexturesY = m_tileset.getSize().y / map.tileSize[1];
 
 	numOfTextures = numOfTexturesX * numOfTexturesY;
 }
 
-void CreateSpriteSheet(std::vector <sf::Texture>& textures, std::string tileset, int numOfTexturesX, int numOfTexturesY, int tilesizeX, int tilesizeY) {
+void CreateSpriteSheet(std::vector <sf::Texture>& textures, int numOfTexturesX, int numOfTexturesY, Map map) {
 	for (int y = 0; y < numOfTexturesY; y++) {
 		for (int x = 0; x < numOfTexturesX; x++) {
 			sf::Texture textureToAdd;
-			textureToAdd.loadFromFile(tileset, sf::IntRect((tilesizeX * x), (tilesizeY * y), tilesizeX, tilesizeY));
+			textureToAdd.loadFromFile(map.textureForMap, sf::IntRect((map.tileSize[0] * x), (map.tileSize[1] * y), map.tileSize[0], map.tileSize[1]));
 
 			textures[x % numOfTexturesX + y * numOfTexturesX] = (textureToAdd);
 		}
 	}
 }
 
-void SetTileSprites(std::vector <Tile> &tiles, std::vector<int> level, int mapsize, int tilesizeX, int tilesizeY, std::vector<sf::Texture> &textures) {
-	for (int y = 0; y < mapsize; y++) {
-		for (int x = 0; x < mapsize; x++) {
+void SetTileSprites(std::vector <Tile>& tiles, Map map, std::vector<sf::Texture>& textures) {
+	for (int y = 0; y < map.mapSize[0]; y++) {
+		for (int x = 0; x < map.mapSize[1]; x++) {
 			//std::cout << "Setting sprite "<< (x+(y*mapsize)) << " to position :" << x << ", " << y << std::endl;
-			tiles[x + (y * mapsize)] = Tile(level[x + (y * mapsize)], x * tilesizeX, y * tilesizeY, textures);
+			tiles[x + (y * map.mapSize[0])] = Tile(map.map[x + (y * map.mapSize[0])], x * map.tileSize[0], y * map.tileSize[1], textures);
 		}
 	}
 	std::cout << "Tiles size: " << tiles.size() << std::endl;
 }
 
-void createPreviewTiles(std::vector<Tile> &previewTiles, std::vector <sf::Texture> &textures, int tilesizeX, int tilesizeY, int numOfTextures) {
+void createPreviewTiles(std::vector<Tile>& previewTiles, std::vector <sf::Texture>& textures, Map map, int numOfTextures) {
 	int yOffset = 0;
 	int xOffset = 0;
 	int tileBreakAt = 0;
-	if (tilesizeX != 0) {
-		tileBreakAt = (270 / tilesizeX) - 1;
-		std::cout << "Breaking at " << " 270/" << tilesizeX << " = " << (270 / tilesizeX) - 1 << std::endl;
+	if (map.tileSize[0] != 0) {
+		tileBreakAt = (270 / map.tileSize[0]) - 1;
+		std::cout << "Breaking at " << " 270/" << map.tileSize[0] << " = " << (270 / map.tileSize[0]) - 1 << std::endl;
 	}
 	std::cout << "NumTextures is " << numOfTextures << std::endl;
 
@@ -346,30 +361,26 @@ void createPreviewTiles(std::vector<Tile> &previewTiles, std::vector <sf::Textur
 		}
 		//std::cout << "Setting preview Tiles at " << i << std::endl;
 
-		previewTiles[i] = Tile(i, 830 + xOffset * tilesizeX, (yOffset * tilesizeY) + 35, textures);
+		previewTiles[i] = Tile(i, 830 + xOffset * map.tileSize[0], (yOffset * map.tileSize[1]) + 35, textures);
 		xOffset++;
 	}
 
 }
 
-void CreateTilemap(std::string& oldWorkingFile, std::string newWorkingFile, std::vector<int>& level, int& oldMapsize, int newMapsize, int& oldTilesizeX, int newTilesizeX, int& oldTilesizeY, int newTilesizeY, std::string& oldTileset, std::string newTileset) {
+void CreateTilemap(std::string& oldWorkingFile, std::string newWorkingFile, Map& map, int newMapsize, int newTilesizeX, int newTilesizeY, std::string newTileset) {
 	oldWorkingFile = newWorkingFile;
 	std::cout << "Passed working File" << std::endl;
 
-	level.resize(newMapsize * newMapsize);
+	map.map.resize(newMapsize * newMapsize);
 	std::cout << "Passed level Resize" << std::endl;
 
-	oldTileset = newTileset;
+	map.textureForMap = newTileset;
 	std::cout << "Passed tileset" << std::endl;
 
-	oldMapsize = newMapsize;
+	map.mapSize = { newMapsize,newMapsize };
 	std::cout << "Passed mapSize" << std::endl;
 
-	oldTilesizeX = newTilesizeX;
-	std::cout << "Passed tileSizeX" << std::endl;
-
-	oldTilesizeY = newTilesizeY;
-	std::cout << "Passed tileSizeY" << std::endl;
+	map.tileSize = { newTilesizeX,newTilesizeY };
 }
 
 int main()
@@ -383,11 +394,11 @@ int main()
 	sf::RenderWindow window(sf::VideoMode(1080, 720), "Level Editor");
 	window.setVerticalSyncEnabled(true);
 
-	std::string tileset = "";
-	int tilesizeX = 0;
-	int tilesizeY = 0;
-	int mapsize = 0;
-	std::vector<int> level;
+	Map map = Map();
+	map.textureForMap = "";
+	map.tileSize = { 0,0 };
+	map.mapSize = { 0,0 };
+	map.map = {};
 
 	std::string workingFile;
 
@@ -396,7 +407,7 @@ int main()
 	workingFile = " ";
 	std::cout << "Passed Text enter" << std::endl;
 
-	LoadFromJson(workingFile, level, tilesizeX, tilesizeY, mapsize, tileset);
+	LoadFromJson(workingFile,map);
 
 	std::cout << "Passed Loading" << std::endl;
 	/*
@@ -423,7 +434,7 @@ int main()
 	int numOfTexturesY;
 	int numOfTextures;
 
-	InitializeNumOfTextures(tileset, numOfTexturesX, numOfTexturesY, numOfTextures, tilesizeX, tilesizeY);
+	InitializeNumOfTextures(map, numOfTexturesX, numOfTexturesY, numOfTextures);
 
 	std::cout << "Passed num of Texture init" << std::endl;
 
@@ -446,11 +457,11 @@ int main()
 	}
 	*/
 
-	CreateSpriteSheet(textures, tileset, numOfTexturesX, numOfTexturesY, tilesizeX, tilesizeY);
+	CreateSpriteSheet(textures, numOfTexturesX, numOfTexturesY,map);
 	std::cout << "Passed spriteSheet" << std::endl;
 
-	std::vector<Tile> tiles(mapsize * mapsize);
-	std::cout << "Array Size is : " << mapsize * mapsize << std::endl;
+	std::vector<Tile> tiles(map.mapSize[0] * map.mapSize[1]);
+	std::cout << "Array Size is : " << map.mapSize[0] * map.mapSize[1] << std::endl;
 
 	/*
 	srand (10);
@@ -469,7 +480,7 @@ int main()
 	}
 	*/
 
-	SetTileSprites(tiles, level, mapsize, tilesizeX, tilesizeY, textures);
+	SetTileSprites(tiles,map, textures);
 	std::cout << "Passed SetTileSprites" << std::endl;
 
 	int selectedTileType = 0;
@@ -477,7 +488,7 @@ int main()
 
 	std::vector<Tile> previewTiles(numOfTextures);
 
-	createPreviewTiles(previewTiles, textures, tilesizeX, tilesizeY, numOfTextures);
+	createPreviewTiles(previewTiles, textures,map, numOfTextures);
 	/*
 	int yOffset = 0;
 	int xOffset = 0;
@@ -616,29 +627,33 @@ int main()
 			mouseReleased - false;
 			if (localMousePosition.x < 810) {
 				//std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
-				
-				for (int i = 0; i < mapsize * mapsize; i++) {
+
+				for (int i = 0; i < map.mapSize[0] * map.mapSize[1]; i++) {
 					if (localMousePosition.x > tiles[i].x and
-						localMousePosition.x < tiles[i].x + tilesizeX and
+						localMousePosition.x < tiles[i].x + map.tileSize[0] and
 						localMousePosition.y > tiles[i].y and
-						localMousePosition.y < tiles[i].y + tilesizeY) {
+						localMousePosition.y < tiles[i].y + map.tileSize[1]) {
 						//std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
-						tiles[i].UpdateTexture(selectedTileType, textures);
-						level[i] = selectedTileType;
-						
+						if(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)){
+							selectedTileType = tiles[i].textureValue;
+						}
+						else {
+							tiles[i].UpdateTexture(selectedTileType, textures);
+							map.map[i] = selectedTileType;
+						}
 						break;
 
 
 					}
 				}
-				
+
 			}
 			else if (localMousePosition.x > saveToJsonButton.getPosition().x and
 				localMousePosition.x < saveToJsonButton.getPosition().x + saveToJsonButton.getSize().x and
 				localMousePosition.y > saveToJsonButton.getPosition().y and
 				localMousePosition.y < saveToJsonButton.getPosition().y + saveToJsonButton.getSize().y) {
 				//std::cout << "Saving Json" << std::endl;
-				SaveToJson(textboxes[0].displayText, level, tilesizeX, tilesizeY, mapsize, tileset);
+				SaveToJson(textboxes[0].displayText, map);
 
 
 
@@ -649,23 +664,29 @@ int main()
 				localMousePosition.x < loadFromJsonButton.getPosition().x + loadFromJsonButton.getSize().x and
 				localMousePosition.y > loadFromJsonButton.getPosition().y and
 				localMousePosition.y < loadFromJsonButton.getPosition().y + loadFromJsonButton.getSize().y) {
-					
+
 				//std::cout << "Loading Json" << std::endl;
-				LoadFromJson(textboxes[0].displayText, level, tilesizeX, tilesizeY, mapsize, tileset);
-				
-				InitializeNumOfTextures(tileset, numOfTexturesX, numOfTexturesY, numOfTextures, tilesizeX, tilesizeY);
+				LoadFromJson(textboxes[0].displayText, map);
+
+				InitializeNumOfTextures(map, numOfTexturesX, numOfTexturesY, numOfTextures);
 				textures.resize(numOfTextures);
-				CreateSpriteSheet(textures, tileset, numOfTexturesX, numOfTexturesY, tilesizeX, tilesizeY);
-				tiles.resize(mapsize * mapsize);
-				SetTileSprites(tiles, level, mapsize, tilesizeX, tilesizeY, textures);
+				std::cout << "InitializeNumOfTextures" << std::endl;
+
+				CreateSpriteSheet(textures, numOfTexturesX, numOfTexturesY,map);
+				tiles.resize(map.mapSize[0] * map.mapSize[1]);
+				std::cout << "Creating SpriteSheet" << std::endl;
+
+				SetTileSprites(tiles,map, textures);
 				previewTiles.resize(numOfTextures);
-				createPreviewTiles(previewTiles, textures, tilesizeX, tilesizeY, numOfTextures);
-				SetTileSprites(tiles, level, mapsize, tilesizeX, tilesizeY, textures);
-				
-				textboxes[1].displayText = std::to_string(tilesizeX);
-				textboxes[2].displayText = std::to_string(tilesizeY);
-				textboxes[3].displayText = std::to_string(mapsize);
-				textboxes[4].displayText = tileset;
+				std::cout << "SetTileSprites" << std::endl;
+
+				createPreviewTiles(previewTiles, textures, map, numOfTextures);
+				SetTileSprites(tiles,map, textures);
+
+				textboxes[1].displayText = std::to_string(map.tileSize[0]);
+				textboxes[2].displayText = std::to_string(map.tileSize[1]);
+				textboxes[3].displayText = std::to_string(map.mapSize[0]);
+				textboxes[4].displayText = map.textureForMap;
 
 			}
 			else if (localMousePosition.x > createButton.getPosition().x and
@@ -695,34 +716,34 @@ int main()
 
 				std::cout << "Passed" <<std::endl;
 				*/
-				CreateTilemap(workingFile, textboxes[0].displayText, level, mapsize, textboxes[3].displayTextInt(), tilesizeX, textboxes[1].displayTextInt(), tilesizeY, textboxes[2].displayTextInt(), tileset, textboxes[4].displayText);
+				CreateTilemap(workingFile, textboxes[0].displayText, map, textboxes[3].displayTextInt(), textboxes[1].displayTextInt(), textboxes[2].displayTextInt(), textboxes[4].displayText);
 
-				InitializeNumOfTextures(tileset, numOfTexturesX, numOfTexturesY, numOfTextures, tilesizeX, tilesizeY);
+				InitializeNumOfTextures(map, numOfTexturesX, numOfTexturesY, numOfTextures);
 				std::cout << "InitalizedTextures" << std::endl;
 
 				textures.resize(numOfTextures);
 
-				CreateSpriteSheet(textures, tileset, numOfTexturesX, numOfTexturesY, tilesizeX, tilesizeY);
+				CreateSpriteSheet(textures, numOfTexturesX, numOfTexturesY, map);
 				std::cout << "CreateSpriteSheet" << std::endl;
 
-				tiles.resize(mapsize * mapsize);
-				SetTileSprites(tiles, level, mapsize, tilesizeX, tilesizeY, textures);
+				tiles.resize(map.mapSize[0] * map.mapSize[1]);
+				SetTileSprites(tiles, map, textures);
 				std::cout << "SetTileSprites" << std::endl;
 
 				previewTiles.resize(numOfTextures);
-				createPreviewTiles(previewTiles, textures, tilesizeX, tilesizeY, numOfTextures);
+				createPreviewTiles(previewTiles, textures, map, numOfTextures);
 				std::cout << "createPreviewTiles" << std::endl;
 
 
 
 			}
-			
+
 			else {
 				for (int i = 0; i < numOfTextures; i++) {
 					if (localMousePosition.x > previewTiles[i].x and
-						localMousePosition.x < previewTiles[i].x + tilesizeX and
+						localMousePosition.x < previewTiles[i].x + map.tileSize[0] and
 						localMousePosition.y > previewTiles[i].y and
-						localMousePosition.y < previewTiles[i].y + tilesizeY) {
+						localMousePosition.y < previewTiles[i].y + map.tileSize[1]) {
 						std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
 						std::cout << "Selected tile: " << selectedTileType << std::endl;
 
@@ -764,14 +785,14 @@ int main()
 		window.draw(createButton);
 		window.draw(createText);
 		//std::cout << "Tiles size: " << tiles.size() << std::endl;
-		for (int x = 0; x < mapsize; x++) {
-			for (int y = 0; y < mapsize; y++) {
-				window.draw(tiles[y + x * mapsize].sprite);
+		for (int x = 0; x < map.mapSize[0]; x++) {
+			for (int y = 0; y < map.mapSize[1]; y++) {
+				window.draw(tiles[y + x * map.mapSize[0]].sprite);
 			}
 		}
 
-		for (int i = 0; i < numOfTextures; i++){
-			
+		for (int i = 0; i < numOfTextures; i++) {
+
 			window.draw(previewTiles[i].sprite);
 		}
 
