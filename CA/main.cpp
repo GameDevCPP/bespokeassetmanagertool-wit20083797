@@ -140,6 +140,7 @@ public:
 	int x = 0;
 	int y = 0;
 	sf::Sprite sprite = sf::Sprite();
+	float displayScaleFactor = 1;
 
 	Tile(int tValue, int xpos, int ypos, std::vector<sf::Texture>& textures) {
 		textureValue = tValue;
@@ -254,7 +255,7 @@ void SaveToJson(std::string workingFile, Map map) {
 
 }
 
-void LoadFromJson(std::string workingFile, Map &map) {
+void LoadFromJson(std::string workingFile, Map& map) {
 
 	nlohmann::json j2;
 	std::ifstream inputFile(workingFile + ".json");
@@ -296,7 +297,7 @@ void LoadFromJson(std::string workingFile, Map &map) {
 	map.mapSize[1] = load_mapHeight;
 	map.tileSize = load_tileSize;
 
-	std::cout << map.textureForMap <<map.mapSize[0] << map.mapSize[1] << map.tileSize[0] << map.tileSize[1] << std::endl;
+	std::cout << map.textureForMap << map.mapSize[0] << map.mapSize[1] << map.tileSize[0] << map.tileSize[1] << std::endl;
 }
 
 
@@ -331,10 +332,26 @@ void CreateSpriteSheet(std::vector <sf::Texture>& textures, int numOfTexturesX, 
 }
 
 void SetTileSprites(std::vector <Tile>& tiles, Map map, std::vector<sf::Texture>& textures) {
+	float localDisplayScaleFactor = 0.00;
+
+	std::cout << "Display Factor is: " << 810.00 << "/" << map.tileSize[0] << std::endl;
+
+	if (map.mapSize[0] != 0) {
+
+		localDisplayScaleFactor += (float)810.00 / ((float)map.tileSize[0] * (float)map.mapSize[0]);
+	}
+	else {
+		std::cout << "Defaulting to 1" << std::endl;
+		localDisplayScaleFactor = 1;
+	}
+
+	std::cout << "Display Factor is: " << localDisplayScaleFactor << std::endl;
 	for (int y = 0; y < map.mapSize[0]; y++) {
 		for (int x = 0; x < map.mapSize[1]; x++) {
 			//std::cout << "Setting sprite "<< (x+(y*mapsize)) << " to position :" << x << ", " << y << std::endl;
-			tiles[x + (y * map.mapSize[0])] = Tile(map.map[x + (y * map.mapSize[0])], x * map.tileSize[0], y * map.tileSize[1], textures);
+			tiles[x + (y * map.mapSize[0])] = Tile(map.map[x + (y * map.mapSize[0])], x * map.tileSize[0] * localDisplayScaleFactor, y * map.tileSize[1] * localDisplayScaleFactor, textures);
+			tiles[x + (y * map.mapSize[0])].displayScaleFactor = localDisplayScaleFactor;
+			tiles[x + (y * map.mapSize[0])].sprite.setScale(localDisplayScaleFactor, localDisplayScaleFactor);
 		}
 	}
 	std::cout << "Tiles size: " << tiles.size() << std::endl;
@@ -344,10 +361,23 @@ void createPreviewTiles(std::vector<Tile>& previewTiles, std::vector <sf::Textur
 	int yOffset = 0;
 	int xOffset = 0;
 	int tileBreakAt = 0;
-	if (map.tileSize[0] != 0) {
-		tileBreakAt = (270 / map.tileSize[0]) - 1;
-		std::cout << "Breaking at " << " 270/" << map.tileSize[0] << " = " << (270 / map.tileSize[0]) - 1 << std::endl;
+	float localDisplayScaleFactor = 0;
+	
+	if (map.mapSize[0] != 0) {
+
+		localDisplayScaleFactor = (float)270.00 / (((float)map.tileSize[0] * (float)map.tileSize[0]) + (numOfTextures/map.tileSize[0]));
+		std::cout << "Scale Factor: " << localDisplayScaleFactor << std::endl;
 	}
+	else {
+		std::cout << "Defaulting to 1" << std::endl;
+		localDisplayScaleFactor = 1;
+	}
+	
+
+		if (map.tileSize[0] != 0) {
+			tileBreakAt = 270 / (localDisplayScaleFactor*(map.tileSize[0]));
+			std::cout << "Breaking at " << tileBreakAt << std::endl;
+		}
 	std::cout << "NumTextures is " << numOfTextures << std::endl;
 
 	for (int i = 0; i < numOfTextures; i++) {
@@ -361,7 +391,9 @@ void createPreviewTiles(std::vector<Tile>& previewTiles, std::vector <sf::Textur
 		}
 		//std::cout << "Setting preview Tiles at " << i << std::endl;
 
-		previewTiles[i] = Tile(i, 830 + xOffset * map.tileSize[0], (yOffset * map.tileSize[1]) + 35, textures);
+		previewTiles[i] = Tile(i, 830 + xOffset * map.tileSize[0]*localDisplayScaleFactor, (yOffset * map.tileSize[1]*localDisplayScaleFactor) + 35, textures);
+		previewTiles[i].displayScaleFactor = localDisplayScaleFactor;
+		previewTiles[i].sprite.setScale(localDisplayScaleFactor, localDisplayScaleFactor);
 		xOffset++;
 	}
 
@@ -391,7 +423,7 @@ int main()
 	{
 
 	}
-	sf::RenderWindow window(sf::VideoMode(1080, 720), "Level Editor");
+	sf::RenderWindow window(sf::VideoMode(1280, 720), "Level Editor");
 	window.setVerticalSyncEnabled(true);
 
 	Map map = Map();
@@ -407,7 +439,7 @@ int main()
 	workingFile = " ";
 	std::cout << "Passed Text enter" << std::endl;
 
-	LoadFromJson(workingFile,map);
+	LoadFromJson(workingFile, map);
 
 	std::cout << "Passed Loading" << std::endl;
 	/*
@@ -457,7 +489,7 @@ int main()
 	}
 	*/
 
-	CreateSpriteSheet(textures, numOfTexturesX, numOfTexturesY,map);
+	CreateSpriteSheet(textures, numOfTexturesX, numOfTexturesY, map);
 	std::cout << "Passed spriteSheet" << std::endl;
 
 	std::vector<Tile> tiles(map.mapSize[0] * map.mapSize[1]);
@@ -480,7 +512,7 @@ int main()
 	}
 	*/
 
-	SetTileSprites(tiles,map, textures);
+	SetTileSprites(tiles, map, textures);
 	std::cout << "Passed SetTileSprites" << std::endl;
 
 	int selectedTileType = 0;
@@ -488,7 +520,7 @@ int main()
 
 	std::vector<Tile> previewTiles(numOfTextures);
 
-	createPreviewTiles(previewTiles, textures,map, numOfTextures);
+	createPreviewTiles(previewTiles, textures, map, numOfTextures);
 	/*
 	int yOffset = 0;
 	int xOffset = 0;
@@ -560,7 +592,7 @@ int main()
 
 
 		sf::RectangleShape menuBG;
-		menuBG.setSize(sf::Vector2f(270, 720));
+		menuBG.setSize(sf::Vector2f(600, 720));
 		menuBG.setPosition(810, 0);
 		sf::Color colorBG = sf::Color(43, 92, 43);
 		menuBG.setFillColor(colorBG);
@@ -630,11 +662,11 @@ int main()
 
 				for (int i = 0; i < map.mapSize[0] * map.mapSize[1]; i++) {
 					if (localMousePosition.x > tiles[i].x and
-						localMousePosition.x < tiles[i].x + map.tileSize[0] and
+						localMousePosition.x < tiles[i].x + map.tileSize[0] * tiles[i].displayScaleFactor and
 						localMousePosition.y > tiles[i].y and
-						localMousePosition.y < tiles[i].y + map.tileSize[1]) {
+						localMousePosition.y < tiles[i].y + map.tileSize[1] * tiles[i].displayScaleFactor) {
 						//std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
-						if(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)){
+						if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
 							selectedTileType = tiles[i].textureValue;
 						}
 						else {
@@ -672,16 +704,16 @@ int main()
 				textures.resize(numOfTextures);
 				std::cout << "InitializeNumOfTextures" << std::endl;
 
-				CreateSpriteSheet(textures, numOfTexturesX, numOfTexturesY,map);
+				CreateSpriteSheet(textures, numOfTexturesX, numOfTexturesY, map);
 				tiles.resize(map.mapSize[0] * map.mapSize[1]);
 				std::cout << "Creating SpriteSheet" << std::endl;
 
-				SetTileSprites(tiles,map, textures);
+				SetTileSprites(tiles, map, textures);
 				previewTiles.resize(numOfTextures);
 				std::cout << "SetTileSprites" << std::endl;
 
 				createPreviewTiles(previewTiles, textures, map, numOfTextures);
-				SetTileSprites(tiles,map, textures);
+				SetTileSprites(tiles, map, textures);
 
 				textboxes[1].displayText = std::to_string(map.tileSize[0]);
 				textboxes[2].displayText = std::to_string(map.tileSize[1]);
@@ -741,9 +773,9 @@ int main()
 			else {
 				for (int i = 0; i < numOfTextures; i++) {
 					if (localMousePosition.x > previewTiles[i].x and
-						localMousePosition.x < previewTiles[i].x + map.tileSize[0] and
+						localMousePosition.x < previewTiles[i].x + map.tileSize[0] * previewTiles[i].displayScaleFactor and
 						localMousePosition.y > previewTiles[i].y and
-						localMousePosition.y < previewTiles[i].y + map.tileSize[1]) {
+						localMousePosition.y < previewTiles[i].y + map.tileSize[1] * previewTiles[i].displayScaleFactor) {
 						std::cout << "Mouse Pressed at: " << localMousePosition.x << ", " << localMousePosition.y << std::endl;
 						std::cout << "Selected tile: " << selectedTileType << std::endl;
 
