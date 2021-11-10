@@ -365,7 +365,7 @@ void createPreviewTiles(std::vector<Tile>& previewTiles, std::vector <sf::Textur
 	
 	if (map.mapSize[0] != 0) {
 
-		localDisplayScaleFactor = (float)270.00 / (((float)map.tileSize[0] * (float)map.tileSize[0]) + (numOfTextures/map.tileSize[0]));
+		localDisplayScaleFactor = (float)20/(float)map.tileSize[0];
 		std::cout << "Scale Factor: " << localDisplayScaleFactor << std::endl;
 	}
 	else {
@@ -375,7 +375,7 @@ void createPreviewTiles(std::vector<Tile>& previewTiles, std::vector <sf::Textur
 	
 
 		if (map.tileSize[0] != 0) {
-			tileBreakAt = 270 / (localDisplayScaleFactor*(map.tileSize[0]));
+			tileBreakAt = 420 / (localDisplayScaleFactor*(float)(map.tileSize[0]));
 			std::cout << "Breaking at " << tileBreakAt << std::endl;
 		}
 	std::cout << "NumTextures is " << numOfTextures << std::endl;
@@ -393,6 +393,7 @@ void createPreviewTiles(std::vector<Tile>& previewTiles, std::vector <sf::Textur
 
 		previewTiles[i] = Tile(i, 830 + xOffset * map.tileSize[0]*localDisplayScaleFactor, (yOffset * map.tileSize[1]*localDisplayScaleFactor) + 35, textures);
 		previewTiles[i].displayScaleFactor = localDisplayScaleFactor;
+		std::cout << "Scale factor: " << localDisplayScaleFactor << std::endl;
 		previewTiles[i].sprite.setScale(localDisplayScaleFactor, localDisplayScaleFactor);
 		xOffset++;
 	}
